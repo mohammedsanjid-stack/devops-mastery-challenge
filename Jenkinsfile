@@ -52,4 +52,64 @@ pipeline {
                       --memory-swap=300m \
                       --jobs=1 \
                       --tag localhost/devops-mastery-app:${BUILD_NUMBER} \
+                      .
+                '''
+            }
+        }
+
+        stage('Push Image to Docker Hub') {
+            steps {
+                withCredentials([
+                    usernamePassword(
+                        credentialsId: 'dockerhub-credentials',
+                        usernameVariable: 'DOCKERHUB_USERNAME',
+                        passwordVariable: 'DOCKERHUB_TOKEN'
+                    )
+                ]) {
+                    sh '''
+                        set +x
+                        AUTHFILE="$WORKSPACE/.docker-auth.json"
+                        trap 'podman logout --authfile "$AUTHFILE" docker.io >/dev/null 2>&1 || true; rm -f "$AUTHFILE"' EXIT
+
+                        printf '%s' "$DOCKERHUB_TOKEN" | \
+                          podman login \
+                            --authfile "$AUTHFILE" \
+                            --username "$DOCKERHUB_USERNAME" \
+                            --password-stdin docker.io
+
+                        podman tag \
+                          localhost/devops-mastery-app:${BUILD_NUMBER} \
+                          docker.io/${IMAGE_NAME}:${BUILD_NUMBER}
+
+                        podman tag \
+                          localhost/devops-mastery-app:${BUILD_NUMBER} \
+                          docker.io/${IMAGE_NAME}:latest
+
+                        podman push \
+                          --authfile "$AUTHFILE" \
+                          docker.io/${IMAGE_NAME}:${BUILD_NUMBER}
+
+                        podman push \
+                          --authfile "$AUTHFILE" \
+                          docker.io/${IMAGE_NAME}:latest
+                    '''
+                }
+            }
+        }
+    }
+
+    post {
+        success {
+            echo 'CI pipeline completed: tests passed, image built and pushed to Docker Hub.'
+        }
+
+        failure {
+            echo 'CI pipeline failed. Review the stage logs.'
+        }
+
+        always {
+            cleanWs()
+        }
+    }
+}
 
