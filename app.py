@@ -7,10 +7,8 @@ app = Flask(__name__)
 def home():
     return jsonify({
         "message": "DevOps Mastery Challenge - Main Branch",
-        "message": "DevOps Mastery Challenge - Feature Branch",
         "status": "running"
     })
-
 
 @app.route("/api/health")
 def health():
