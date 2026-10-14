@@ -17,6 +17,13 @@ def health():
         "status": "healthy"
     })
 
+@app.route("/api/about")
+def about():
+    return jsonify({
+        "project": "DevOps Mastery Challenge",
+        "version": "1.0.0",
+        "framework": "Flask"
+    })
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000)
